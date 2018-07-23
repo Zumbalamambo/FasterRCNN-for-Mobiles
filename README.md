@@ -1,5 +1,5 @@
 # Sử dụng Faster R-CNN, Mask R-CNN và SSD nhận diện số thẻ ATM
-![](card_number_detection.JPG)
+![](assets/detection_masks.png)
 
 
 Presentation gồm:
