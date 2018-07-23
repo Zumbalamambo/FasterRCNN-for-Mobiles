@@ -13,10 +13,11 @@ Presentation gồm:
 ## 1. Kiến trúc mạng Faster R-CNN và demo nhận dạng số thẻ ATM trên Jupyter Notebook
 ### 1.1. Kiến trúc mạng Faster R-CNN
 Faster R-CNN được xây dựng bởi Jian Sun, nhà nghiên cứu của Microsoft, đã thắng cuộc thi ImageNet năm 2015 
-(https://blogs.microsoft.com/next/2015/12/10/microsoft-researchers-win-imagenet-computer-vision-challenge/#sm.00017fqnl1bz6fqf11amuo0d9ttdp)
+(https://blogs.microsoft.com/next/2015/12/10/microsoft-researchers-win-imagenet-computer-vision-challenge/#sm.00017fqnl1bz6fqf11amuo0d9ttdp).
+
 Mùa thu năm 2015, một nhóm nghiên cứu của Microsoft gồm Shaoqing Ren, Kaiming He, Ross Girshick, và Jian Sun, 
 đã tìm ra cách cải tiến bước tạo ra region proposal, không dùng giải thuật Selective Search nữa mà sử dụng Region Proposal Network để tạo ra region proposals
--là một Fully Convolutional Network ở trên đỉnh của CNN, CNN có thể là AlexNet hoặc VGG. 
+- là một Fully Convolutional Network ở trên đỉnh của CNN, CNN có thể là AlexNet hoặc VGG. 
 Region Proposal Network dựa trên các đặc trưng của ảnh đã được tính toán trước đó bởi AlexNet. 
 Vì vậy, các kết quả đã được tính toán đó sẽ được tái sử dụng thay vì chạy giải thuật Selective Search riêng biệt.  
 Một Region Proposal Network nhận đầu vào là ảnh với kích thước bất kì và cho đầu ra là region proposal 
@@ -39,6 +40,36 @@ Tại sao phải tạo ra những anchors này. Theo tôi thì, trong bài toán
 Ví dụ một bức ảnh có thể có 2 vật thể, một bức ảnh khác có 4 vật thể. Vì số lượng output là không cố định ta phải dựa vào các anchor để cố định hóa số lượng output này. 
 Đối với mỗi bức ảnh, ta đều sinh ra các anchors tương ứng phụ thuộc vào kích cỡ của ảnh đó, bằng cách tính giá trị overlap của anchors với ground truth boxes, 
 ta có thể xác định được anchors đó là positive hay negative. 
+
+Sau khi đã có đầu ra của các region proposals, chúng ta sẽ tìm hiểu về khái niệm anchors. 
+Tại mỗi vị trí của sliding window trên convolutional features, chúng ta tạo ra k anchors tương ứng ở hình ảnh gốc. 
+Trong bài báo, tác giả sử dụng 1 hình vuông, 2 hình chữ nhật với tỉ lệ chiều rộng, chiều dài là 1-2, 2-1, cùng với 3 kích cỡ khác nhau, như vậy k=3×3=9. 
+![](assets/anchors.png)
+
+Các anchors này sẽ được gán mác là positive hoặc negative dựa vào diện tích overlap với ground truth box theo luật như sau:
+* Các anchor được phân loại là positive nếu
+* Là anchor có tỉ lệ diện tích chồng chéo trên diện tích chồng chập (Intersection-over- Union - viết tắt IoU) overlap lớn nhất với một ground truth box.
+* Là anchor có tỉ lệ IoU với một ground truth lớn hơn 0.7
+* Các anchor được phân noại là negative nếu có giá trị IoU bé hơn 0.3
+* Các anchor không thỏa mãn 2 điều kiện nêu trên thì bỏ qua. Không được đánh giá trong quá trình training object.
+
+Tại sao phải tạo ra những anchors này? Câu trả lời gồm 2 nguyên nhân chính:
+* Dựa phân loại của anchor, để dự đoán xác suất chứa vật thể của các region proposal
+* Dựa vào khoảng cách từ anchor đến ground truth box, để dự đoán vị trí của bounding box. 
+
+Từ đây ta xác định được mục tiêu đầu ra của box-regression layer và box-classification:
+* Box-classification dự đoán xác suất chứa vật thể của k region proposal, tương ứng với k anchor tại từng vị trí của sliding-window.
+* Box-regression dự đoán khoảng cách tư anchor đến ground truth box tương ứng.
+
+### 1.2. So sánh Faster R-CNN với các mạng nơ ron trước đó
+![](assets/compare-rcnn-fastrcnn-fasterrcnn.png) ![](assets/compare-rcnn-fastrcnn-fasterrcnn2.png)
+
+Fast R-CNN train nhanh hơn R-CNN khoảng 10 lần bởi vì việc chia sẻ các giá trị tính toán giữa các feature maps và test time thì nhanh khủng khiếp. 
+Kết quả thực nghiệm đã chỉ ra rằng hầu hết thời gian test là để tính toán tìm ra các region proposals, và với giải thuật Selective Search thì Fast R-CNN 
+mất khoảng 2.3 seconds và trong trường hợp Fast R-CNN đã có các region proposals thì việc prediction chỉ chiếm 0.32 seconds. 
+
+Faster R-CNN thực sự rất hiệu quả, chỉ mất 0.2 seconds để dự đoán. Độ chính xác của Faster R-CNN cũng cao hơn Fast R-CNN và R-CNN bởi vì tự tính toán region proposals 
+nên sẽ không có sự sai khác giữa predicted proposals với dữ liệu train.
 
 ## 2. Kiến trúc mạng Mask R-CNN và demo nhận dạng số thẻ ATM trên Jupyter Notebook
 This is an example of final detection boxes (dotted lines) and the refinement applied to them (solid lines) in the second stage.
